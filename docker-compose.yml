@@ -7,7 +7,6 @@ services:
     restart: always
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     environment:
       POSTGRES_PASSWORD: postgrespassword
       POSTGRES_USER: root
@@ -24,7 +23,9 @@ services:
   #   ports:
   #     - "8080:80"
   node:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.node
     command: "npm run start"
     environment:
       - Node_ENV=production
@@ -37,3 +38,30 @@ volumes:
   db_data:
 
 
+
+# docker build -t solidarize .
+# docker push geandersonlemonte/solidarize-docker
+# docker images | grep solidarize   
+#  docker volume rm solidarize_data
+#  docker volume ls
+
+
+
+#  docker-compose rm -f --> remover o container
+#  docker-compose stop --> parar o container
+#  docker-compose up --build -d --> construir o container
+#  docker-compose pull   --> enviar atualizacoes do container
+#  docker-compose logs   ---> visualizar logs
+
+
+# Sequencia de comandos para limpar do cache
+# docker-compose rm -f
+# docker-compose pull
+# docker-compose up --build -d
+# docker-compose stop
+
+# docker ps --> visualizar processos
+# docker inspect a319f97d5102 | grep IPAddress --> visualizar ip do processo
+
+# comando completo
+# docker-compose pull && docker-compose stop && docker-compose rm -f && docker-compose up --build -d
