@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f2f5;
+    }
+
+    .login-container {
+      background: white;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 300px;
+    }
+
+    .login-container h2 {
+      text-align: center;
+      color: #1a77f2;
+      margin-bottom: 20px;
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .login-form input {
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    .login-form input:focus {
+      border-color: #1a77f2;
+      outline: none;
+    }
+
+    .login-form button {
+      padding: 15px;
+      border: none;
+      background-color: orange;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+
+    .login-form button:hover {
+      background-color: rgb(161, 105, 0);
+    }
+
+    h1 {
+      text-align: center;
+      color: orange;
+    }
+
+    .toast {
+      display: none;
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #e63946;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+
+</head>
+
+<body>
+  <h1>Solidarize</h1>
+  <div class="login-container">
+    <h2 style="color: orange;">Login</h2>
+    <form class="login-form" id="loginForm">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="senha" placeholder="Senha" required>
+      <button type="submit">Entrar</button>
+    </form>
+    <a href="/cadastro-usuario">
+      <h2> Cadastre-se</h2>
+    </a>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script>
+    function salvarValorSessionStorage(chave, valor) {
+      valor = JSON.stringify(valor);
+      console.log(valor);
+      sessionStorage.setItem(chave, valor);
+    }
+
+    function buscarValorSessionStorage(chave) {
+      if (!sessionStorage.getItem(chave)) {
+        window.location.href = `/login`
+        return "";
+      }
+      return JSON.parse(sessionStorage.getItem(chave));
+    }
+
+    function deletarValorSessionStorage(chave) {
+      sessionStorage.removeItem(chave);
+    }
+  </script>
+  <script>
+    deletarValorSessionStorage("userId")
+    document.getElementById('loginForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const senha = document.getElementById('senha').value;
+      const senhaCriptografada = CryptoJS.SHA256(senha, 'chave-secreta').toString();
+      fetch('http://localhost:5050/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha: senhaCriptografada })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.response) {
+            console.log(data.response);
+            salvarValorSessionStorage("userId", data.response.token);
+            window.location.href = `/feed`;
+          } else {
+            showToast(data.message);
+          }
+        })
+        .catch(() => showToast('Erro ao conectar ao servidor'));
+    });
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.style.display = 'block';
+      setTimeout(() => toast.style.display = 'none', 3000);
+    }
+  </script>
+</body>
+
+</html>

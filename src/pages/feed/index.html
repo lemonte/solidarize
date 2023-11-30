@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt0br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solidarize</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      background-color: #f0f2f5;
+    }
+
+    .header {
+      background-color: orange;
+      padding: 10px 20px;
+      color: white;
+      text-align: center;
+    }
+
+    .profile-card {
+      background-color: white;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: start;
+    }
+
+    .profile-card img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      margin-right: 15px;
+    }
+
+    .posts-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .post {
+      background-color: white;
+      margin: 10px;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      width: 60%;
+      max-width: 600px;
+      position: relative;
+    }
+
+    .post img {
+      max-width: 100%;
+      max-height: 400px;
+      object-fit: cover;
+      border-radius: 5px;
+    }
+
+    .post .user-info {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .post .user-info img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+
+    .favorite {
+      cursor: pointer;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 24px;
+      color: #333;
+    }
+
+    .favorite.active {
+      color: #e63946;
+    }
+
+    .btn-flutuante {
+      position: fixed;
+      right: 30px;
+      bottom: 30px;
+      background-color: orange;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      font-size: 30px;
+      cursor: pointer;
+    }
+
+    .pop-up-form {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+    }
+
+    .pop-up-form input,
+    .pop-up-form button {
+      align-items: center;
+      text-align: center;
+      justify-items: center;
+      width: 100%;
+      padding: 10px;
+      max-width: 90%; 
+      margin: auto;
+      margin-top: 10px;
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+  </style>
+  <script>
+    function salvarValorSessionStorage(chave, valor) {
+      valor = JSON.stringify(valor);
+      sessionStorage.setItem(chave, valor);
+    }
+
+    function buscarValorSessionStorage(chave) {
+      if (!sessionStorage.getItem(chave)) {
+        window.location.href = `/login`
+        return "";
+      }
+      return JSON.parse(sessionStorage.getItem(chave));
+    }
+
+    function deletarValorSessionStorage(chave) {
+      sessionStorage.removeItem(chave);
+    }
+  </script>
+</head>
+
+<body>
+  <div class="header">
+    <h1>Solidarize</h1>
+  </div>
+  <div class="profile-card" id="userProfile"></div>
+  <div class="posts-container" id="posts"></div>
+
+  <!-- Botão Flutuante para Novo Post -->
+  <button class="btn-flutuante" id="floating-action-button"
+    onclick="mostrarPopUp()">+</button>
+
+  <!-- Overlay para o Pop-up -->
+  <div class="overlay" id="overlay" onclick="fecharPopUp()"></div>
+
+  <!-- Formulário Pop-up para Novo Post -->
+  <div class="pop-up-form" id="popUpForm">
+    <input type="text" id="urlImage" placeholder="URL da imagem">
+    <button onclick="enviarPost()">Fazer Post</button>
+  </div>
+
+  <script>
+    var isOng = false;
+    const token = buscarValorSessionStorage("userId");
+    async function fetchPosts() {
+      try {
+        const response = await fetch(`http://localhost:5050/post`, {
+          headers: {
+            'x-access-token': token
+          }
+        });
+        const data = await response.json();
+        return data.response;
+      } catch (error) {
+        console.error('Erro ao buscar os posts:', error);
+      }
+    }
+
+    function createUserProfile(user) {
+      const userProfileHtml = `
+    <a href="/perfil?id_usuario=${user.id_usuario}" style="text-decoration: none; color: inherit;">
+        <img src="https://t4.ftcdn.net/jpg/02/29/75/83/360_F_229758328_7x8jwCwjtBMmC6rgFzLFhZoEpLobB6L8.jpg" alt="Profile Picture">
+        <div>
+            <h3>${user.nome}</h3>
+            <p>${user.email}</p>
+        </div>
+    </a>
+`; return userProfileHtml;
+    }
+
+    function createPostElement(post) {
+      const postElement = document.createElement('div');
+      postElement.className = 'post';
+      postElement.innerHTML = `
+            <div class="user-info">
+              ${createUserProfile(post.user)}
+            </div>
+            ${post.imagem ? `<img src="${convertBufferToImageSrc(post.imagem.data)}" alt="Imagem do Post">` : ''}
+            <i class="favorite ${post.favoritado ? 'active' : ''}" onclick="toggleFavorite(this, ${post.id_post}, ${post.favoritado})">&#9733;</i>
+        `;
+      return postElement;
+    }
+
+    function toggleFavorite(element, postID, favoritado) {
+      const token = buscarValorSessionStorage("userId");
+      element.classList.toggle('active');
+      // Enviar requisição de favoritar
+      fetch('http://localhost:5050/curtidas', {
+        method: favoritado ? 'DELETE' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-access-token': token
+        },
+        body: JSON.stringify({
+          id_post: postID
+        })
+      }).then(response => response.json())
+        .then(data => console.log(data))
+        .catch(error => console.error('Erro ao favoritar post:', error));
+    }
+
+    function convertBufferToImageSrc(buffer) {
+      const stringChar = buffer.map(byte => String.fromCharCode(byte)).join('');
+      return decodeURIComponent(stringChar);
+    }
+
+    function removeAllChildNodes(parent) {
+      while (parent.firstChild) {
+        parent.removeChild(parent.firstChild);
+      }
+    }
+
+    async function displayPosts() {
+      const postsContainer = document.getElementById('posts');
+      const posts = await fetchPosts();
+      if (posts && posts.length > 0) {
+        removeAllChildNodes(postsContainer);
+        posts.forEach(post => {
+          const postElement = createPostElement(post);
+          postsContainer.appendChild(postElement);
+        });
+      }
+    }
+    function mostrarPopUp() {
+      document.getElementById('popUpForm').style.display = 'block';
+      document.getElementById('overlay').style.display = 'block';
+    }
+
+    function fecharPopUp() {
+      document.getElementById('popUpForm').style.display = 'none';
+      document.getElementById('overlay').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const token = buscarValorSessionStorage("userId");
+      fetch(`http://localhost:5050/usuario`, {
+        headers: {
+          'x-access-token': token
+        }
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.response && data.response.length > 0) {
+            const user = data.response[0];
+            const userProfileContainer = document.getElementById('userProfile');
+            userProfileContainer.innerHTML = `<a href="/perfil" >
+                    <img src="https://via.placeholder.com/100" alt="Profile Picture">
+                    <div class="profile-info">
+                        <p><strong>Nome:</strong> ${user.nome}</p>
+                        <p><strong>Email:</strong> ${user.email}</p>
+                    </div></a>
+                `;
+            if (!user.is_ong) {
+              document.getElementById("floating-action-button").style.display = "none";
+            }
+          }
+        })
+        .catch(error => console.error('Erro ao carregar perfil:', error));
+    });
+
+    // Função para enviar o novo post
+    function enviarPost() {
+      const urlImage = document.getElementById('urlImage').value;
+      const token = buscarValorSessionStorage("userId");
+
+      fetch('http://localhost:5050/post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-access-token': token
+        },
+        body: JSON.stringify({
+          url_image: urlImage
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+          fecharPopUp();
+          // Atualiza a lista de posts
+          displayPosts();
+        })
+        .catch(error => console.error('Erro ao enviar post:', error));
+    }
+
+    displayPosts();
+  </script>
+</body>
+
+</html>

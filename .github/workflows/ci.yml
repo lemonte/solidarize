@@ -1,0 +1,101 @@
+name: Atualizar README com Alterações
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-on-main:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout do repositorio
+        uses: actions/checkout@v1
+        with:
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
+          fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
+
+      - name: Deploy para meu hosting
+        uses: easingthemes/ssh-deploy@main
+
+        env:
+          SSH_PRIVATE_KEY: ${{secrets.SERVER_SSH_KEY}}
+          ARGS: "-rltgoDzvO --delete"
+          SOURCE: ""
+          REMOTE_HOST: ${{secrets.REMOTE_HOST}}
+          REMOTE_USER: ${{secrets.REMOTE_USER}}
+          REMOTE_PORT: ${{secrets.REMOTE_PORT}}
+          TARGET: ${{secrets.REMOTE_TARGET}}
+
+      - name: Executar o Docker Compose no servidor
+        run: |
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ssh_key.pem
+          chmod 600 ssh_key.pem
+          ssh -i ssh_key.pem ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} -p ${{ secrets.REMOTE_PORT }} 'cd ${{ secrets.REMOTE_TARGET }} && docker-compose up --build -d'
+          rm -f ssh_key.pem
+
+ 
+      - name: Verificar se há alterações em arquivos (exceto README)
+        id: check-changes
+        run: |
+          CHANGES=$(git diff --name-only HEAD^ HEAD)
+          if [[ "$CHANGES" == *README.md* ]]; then
+            echo "::set-output name=has_changes::false"
+          else
+            echo "::set-output name=has_changes::true"
+          fi
+
+      - name: Obter informações do commit e gerar texto de explicação
+        id: commit-info
+        if: steps.check-changes.outputs.has_changes == 'true'
+        run: |
+          COMMIT_HASH=$(git log -1 --format="%h")
+          COMMIT_DATE=$(git log -1 --format="%cd" --date=short)
+          COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          COMMIT_DIFF=$(git log -p -1 | sed 's/"/\\"/g' | awk '{printf "%s\\n", $0}' | jq -aRs .)
+
+          # Chamar a API do ChatGPT
+          DOCUMENTATION_TEXT=$(curl --location 'https://api.openai.com/v1/chat/completions' \
+          --header 'Content-Type: application/json' \
+          --header 'Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}' \
+          --data '{"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "Faça uma documentacao no padrao de readme de github, seguindo o padrao de formatacao, formatacao de codigo, de titulos, e de texto para a seguinte alteracao de codigo, explicando o que foi feito nesse commit. alem claro de manter no inicio da descricao os Detalhes do commit contendo informacoes como: Hash do commit, Autor: <Usuario e email> e Data: \n\n"
+          }, {"role": "user", "content":'"${COMMIT_DIFF}"'}], "temperature": 0.7}'| jq -r '.choices[0].message.content')  
+          
+          echo "Conteúdo de DOCUMENTATION_TEXT:"
+          echo "$DOCUMENTATION_TEXT"
+          echo "Conteúdo de COMMIT_DIFF:"
+          echo "$COMMIT_DIFF"
+          
+          echo "::set-output name=commit_hash::$COMMIT_HASH"
+          echo "::set-output name=commit_date::$COMMIT_DATE"
+          echo "::set-output name=documentation_text::$DOCUMENTATION_TEXT"
+          echo "::set-output name=commit_message::$COMMIT_MESSAGE"
+          echo "$DOCUMENTATION_TEXT" > documentation_text.txt
+
+
+      - name: Atualizar README com informações do commit
+        if: steps.check-changes.outputs.has_changes == 'true'
+        run: |
+          HAS_CHANGES="${{ steps.check-changes.outputs.has_changes }}"
+          if [ "$HAS_CHANGES" == "true" ]; then
+            COMMIT_HASH="${{ steps.commit-info.outputs.commit_hash }}"
+            COMMIT_MESSAGE="${{ steps.commit-info.outputs.commit_message }}"
+            COMMIT_DATE="${{ steps.commit-info.outputs.commit_date }}"
+            DOCUMENTATION_TEXT=$(cat documentation_text.txt)
+
+            # Construir o novo conteúdo do README com as informações do commit
+            NEW_CONTENT="## $COMMIT_MESSAGE => ($COMMIT_DATE)\n $DOCUMENTATION_TEXT \n\n$(cat README.md)"
+
+            # Escrever o novo conteúdo no arquivo README.md
+            echo -e "$NEW_CONTENT" > README.md
+          fi
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Commit & Push changes
+        uses: actions-js/push@master
+        if: steps.check-changes.outputs.has_changes == 'true'
+        with:
+          github_token: ${{ secrets.TOKEN_GIT }}
+          branch: main

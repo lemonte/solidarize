@@ -1,0 +1,39 @@
+version: "3"
+
+services: 
+  postgres:
+    image: postgres:12
+    container_name: pg_solidarize
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    environment:
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_USER: root
+    ports:
+      - "5432:5432"
+
+  # pgadmin:
+  #   container_name: pg_admin
+  #   image: dpage/pgadmin4
+  #   restart: always
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@admin.com
+  #     PGADMIN_DEFAULT_PASSWORD: root
+  #   ports:
+  #     - "8080:80"
+  node:
+    build: .
+    command: "npm run start"
+    environment:
+      - Node_ENV=production
+    expose:
+      - "80"
+    ports:
+      - "5050:5050"
+
+volumes:
+  db_data:
+
+

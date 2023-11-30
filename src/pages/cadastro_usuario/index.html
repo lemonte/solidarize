@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Cadastro</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f4f4f4;
+            font-size: 16px;
+        }
+
+        h1 {
+            color: orange;
+            margin-bottom: 20px;
+        }
+
+        form {
+            background: white;
+            padding: 40px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            width: 50%;
+        }
+
+        label {
+            font-size: 1rem;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="radio"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input[type="radio"] {
+            width: auto;
+        }
+
+        button {
+            background-color: orange;
+            color: white;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background-color: rgb(161, 105, 0);
+        }
+    </style>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+    <script>
+        function salvarValorSessionStorage(chave, valor) {
+            valor = JSON.stringify(valor);
+            sessionStorage.setItem(chave, valor);
+        }
+
+        function buscarValorSessionStorage(chave) {
+            if (!sessionStorage.getItem(chave)) {
+                window.location.href = `/login`
+                return "";
+            }
+            return JSON.parse(sessionStorage.getItem(chave));
+        }
+
+        function deletarValorSessionStorage(chave) {
+            sessionStorage.removeItem(chave);
+        }
+    </script>
+</head>
+
+<body>
+    <h1>SOLIDARIZE</h1>
+    <form id="cadastroForm">
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" name="nome" required><br><br>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br><br>
+
+        <label for="senha">Senha:</label>
+        <input type="password" id="senha" name="senha" required><br><br>
+
+        <label>Tipo de Cadastro:</label><br>
+        <input type="radio" id="ong" name="tipoCadastro" value="ONG" required>
+        <label for="ong">ONG</label><br>
+        <input type="radio" id="voluntario" name="tipoCadastro"
+            value="Voluntario">
+        <label for="voluntario">Voluntário</label><br><br>
+
+        <button type="submit">Enviar</button>
+    </form>
+
+    <script>
+        document.getElementById('cadastroForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var nome = document.getElementById('nome').value;
+            var email = document.getElementById('email').value;
+            var senha = document.getElementById('senha').value;
+
+            const senhaCriptografada = CryptoJS.SHA256(senha, 'chave-secreta').toString();
+            var tipoCadastro = document.querySelector('input[name="tipoCadastro"]:checked').value;
+
+            var data = {
+                nome: nome,
+                email: email,
+                senha: senhaCriptografada,
+                tipoCadastro: tipoCadastro
+            };
+
+            fetch('http://localhost:5050/usuario', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+                .then(response => {
+                    if (!response.ok) { // Verifica se o status da resposta não é ok (200-299)
+                        return response.json().then(errData => {
+                            throw new Error(errData.message || 'Erro desconhecido');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    salvarValorSessionStorage("userId", data.response.token);
+                    if (data.response) {
+                        if (tipoCadastro === 'ONG') {
+                            window.location.href = `/cadastro-ong`;
+                        } else {
+                            alert('Cadastro de Voluntário realizado com sucesso!');
+                            window.location.href = `/feed`;
+                        }
+                    }
+                })
+                .catch((error) => {
+                    console.log(error);
+                    alert(error.toString());
+                });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de ONG</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+      background-color: #f4f4f4;
+      font-size: 16px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    form {
+      background: white;
+      padding: 40px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      width: 50%;
+    }
+
+    label {
+      font-size: 1rem;
+      color: #333;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="radio"] {
+      width: calc(100% - 20px);
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    input[type="radio"] {
+      width: auto;
+    }
+
+    button {
+      background-color: orange;
+      color: white;
+      padding: 15px 20px;
+      margin: 20px 0;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    button:hover {
+      background-color: rgb(161, 105, 0);
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Cadastro de ONG</h1>
+  <form id="cadastroOngForm">
+    <label for="endereco">Endereço:</label>
+    <input type="text" id="endereco" name="endereco" required><br><br>
+
+    <button type="submit">Enviar</button>
+  </form>
+
+  <script>
+    function salvarValorSessionStorage(chave, valor) {
+      valor = JSON.stringify(valor);
+      sessionStorage.setItem(chave, valor);
+    }
+
+    function buscarValorSessionStorage(chave) {
+      if (!sessionStorage.getItem(chave)) {
+        window.location.href = `/login`
+        return "";
+      }
+      return JSON.parse(sessionStorage.getItem(chave));
+    }
+
+    function deletarValorSessionStorage(chave) {
+      sessionStorage.removeItem(chave);
+    }
+  </script>
+  <script>
+    function getQueryParam(param) {
+      var search = window.location.search.substring(1);
+      var params = new URLSearchParams(search);
+      return params.get(param);
+    }
+
+    document.getElementById('cadastroOngForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var endereco = document.getElementById('endereco').value;
+      const token = buscarValorSessionStorage("userId");
+
+      var data = {
+        endereco: endereco
+      };
+
+      fetch('http://localhost:5050/ong', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-access-token': token
+        },
+        body: JSON.stringify(data),
+      }).then(response => {
+        if (!response.ok) { // Verifica se o status da resposta não é ok (200-299)
+          return response.json().then(errData => {
+            throw new Error(errData.message || 'Erro desconhecido');
+          });
+        }
+        return response.json();
+      })
+        .then(data => {
+          const id_usuario = data.response[0].id_ong;
+          console.log('Sucesso:', data);
+          alert('Cadastro de ONG realizado com sucesso!');
+          window.location.href = `/feed`;
+        })
+        .catch((error) => {
+          alert(error);
+        });
+    });
+
+  </script>
+</body>
+
+</html>
