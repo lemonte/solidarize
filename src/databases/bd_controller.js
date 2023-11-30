@@ -8,6 +8,8 @@ const pool = new Pool({
   port: 5432,
 });
 
+
+
 // Função para execução de consultas genéricas
 const query = async (text, params) => {
   try {
@@ -114,6 +116,40 @@ class QueryBuilder {
   }
 }
 
+const initDatabase = async () => {
+  const query = `
+  create table IF NOT EXISTS usuario(
+    id_usuario serial primary key not null,
+    nome varchar(300) not null,
+    email varchar(100) not null unique,
+    senha varchar(400) not null
+  );
+  
+  create table IF NOT EXISTS voluntario(
+    id_voluntario serial primary key not null references usuario(id_usuario)
+  );
+  
+  create table IF NOT EXISTS ong(
+    id_ong integer primary key not null references usuario(id_usuario),
+    endereco varchar(300) not null
+  );
+  
+  create table IF NOT EXISTS post(
+    id_post serial primary key not null,
+    imagem bytea,
+    id_usuario integer not null references usuario(id_usuario)
+  );
+  
+  create table IF NOT EXISTS curtida(
+    id_post integer  references post(id_post) not null,
+    id_usuario integer references usuario(id_usuario) not null,
+    primary key(id_post, id_usuario)
+  );
+  `;
+  await pool.query(query, []);
+
+}
+
 // Funções de conveniência para facilitar a criação de consultas
 const select = (filter, table) => {
   return new QueryBuilder(table).select(filter);
@@ -131,4 +167,4 @@ const insert = (table) => {
   return new QueryBuilder(table).insert();
 };
 
-module.exports = { query, select, update, remove, insert };
+module.exports = { query, select, update, remove, insert, initDatabase };

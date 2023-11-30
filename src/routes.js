@@ -8,6 +8,14 @@ const path = require('path');
 const fs = require('fs');
 const Voluntary = require("./controllers/voluntary");
 const AutenticationController = require("./controllers/autentication");
+const { initDatabase } = require("./databases/bd_controller");
+
+try {
+  initDatabase();
+} catch (e) {
+
+}
+
 
 const ongs = new Ongs();
 const likes = new Likes();
