@@ -121,7 +121,7 @@ const initDatabase = async () => {
   create table IF NOT EXISTS usuario(
     id_usuario serial primary key not null,
     nome varchar(300) not null,
-    email varchar(100) not null unique,
+    email varchar(100) not null,
     senha varchar(400) not null
   );
   
