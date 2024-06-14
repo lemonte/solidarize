@@ -130,7 +130,8 @@
                 tipoCadastro: tipoCadastro
             };
 
-            fetch('http://localhost:5050/usuario', {
+            const baseUrl = window.location.origin;
+            fetch(`${baseUrl}/usuario`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

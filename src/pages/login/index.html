@@ -127,7 +127,8 @@
       const email = document.getElementById('email').value;
       const senha = document.getElementById('senha').value;
       const senhaCriptografada = CryptoJS.SHA256(senha, 'chave-secreta').toString();
-      fetch('http://localhost:5050/login', {
+      const baseUrl = window.location.origin;
+      fetch(`${baseUrl}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, senha: senhaCriptografada })

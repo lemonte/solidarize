@@ -168,9 +168,10 @@
     var usuario = null;
     document.addEventListener('DOMContentLoaded', function () {
       const token = buscarValorSessionStorage("userId");
-      var url = "http://localhost:5050/usuario";
+      const baseUrl = window.location.origin;
+      var url = `${baseUrl}/usuario`;
       if (userId != null) {
-        url = `http://localhost:5050/usuario?id=${userId}`;
+        url = `${baseUrl}/usuario?id=${userId}`;
       }
       fetch(url,
         {
@@ -232,7 +233,8 @@
         email: email,
         senha: senhaCriptografada,
       };
-      fetch('http://localhost:5050/usuario', {
+      const baseUrl = window.location.origin;
+      fetch(`${baseUrl}/usuario`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

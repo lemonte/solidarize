@@ -33,16 +33,24 @@ services:
     networks:
       - nginx_net
     depends_on:
-      - postgres  # Esta linha garante que o node inicie após o postgres
+      - postgres  
 
   nginx:
-    image: nginx
+    container_name: nginx
+    restart: always
+    build: 
+      context: ./nginx
+      dockerfile: Dockerfile
     ports:
       - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
     networks:
       - nginx_net
+    depends_on:
+      - postgres 
+      - node 
 
 volumes:
   db_data:
+
+
+# docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 -t geandersonlemonte/solidarize-docker:latest . --push

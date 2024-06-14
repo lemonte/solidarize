@@ -146,7 +146,11 @@ const initDatabase = async () => {
     primary key(id_post, id_usuario)
   );
   `;
-  await pool.query(query, []);
+  try {
+    await pool.query(query, []);
+  } catch (e) {
+
+  }
 
 }
 

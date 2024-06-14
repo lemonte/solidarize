@@ -121,7 +121,7 @@
       justify-items: center;
       width: 100%;
       padding: 10px;
-      max-width: 90%; 
+      max-width: 90%;
       margin: auto;
       margin-top: 10px;
     }
@@ -182,7 +182,8 @@
     const token = buscarValorSessionStorage("userId");
     async function fetchPosts() {
       try {
-        const response = await fetch(`http://localhost:5050/post`, {
+        const baseUrl = window.location.origin;
+        const response = await fetch(`${baseUrl}/post`, {
           headers: {
             'x-access-token': token
           }
@@ -223,7 +224,8 @@
       const token = buscarValorSessionStorage("userId");
       element.classList.toggle('active');
       // Enviar requisição de favoritar
-      fetch('http://localhost:5050/curtidas', {
+      const baseUrl = window.location.origin;
+      fetch(`${baseUrl}/curtidas`, {
         method: favoritado ? 'DELETE' : 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -271,7 +273,8 @@
 
     document.addEventListener('DOMContentLoaded', function () {
       const token = buscarValorSessionStorage("userId");
-      fetch(`http://localhost:5050/usuario`, {
+      const baseUrl = window.location.origin;
+      fetch(`${baseUrl}/usuario`, {
         headers: {
           'x-access-token': token
         }
@@ -301,7 +304,8 @@
       const urlImage = document.getElementById('urlImage').value;
       const token = buscarValorSessionStorage("userId");
 
-      fetch('http://localhost:5050/post', {
+      const baseUrl = window.location.origin;
+      fetch(`${baseUrl}/post`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

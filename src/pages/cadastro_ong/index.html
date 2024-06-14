@@ -113,8 +113,8 @@
       var data = {
         endereco: endereco
       };
-
-      fetch('http://localhost:5050/ong', {
+      const baseUrl = window.location.origin;
+      fetch(`${baseUrl}/ong`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
